@@ -31,3 +31,9 @@ Po zakończeniu pracy ze środowiskiem wirtualnym można je wyłączyć:
 ```bash
 deactivate
 ```
+
+## 4. Uruchomienie testów programu
+
+```bash
+python3 -m pytest
+```
