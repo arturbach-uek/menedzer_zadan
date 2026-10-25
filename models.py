@@ -39,3 +39,21 @@ class RecurringTask(Task):
     def __str__(self):
         recurrence = "codziennie" if self.how_often_days == 1 else f"co {self.how_often_days} dni"
         return f"{super().__str__()} ↻ {recurrence}"
+
+class TaskManager():
+    def __init__(self):
+        self.tasks_list = []
+    def add_task(self, task):
+        if task in self.tasks_list:
+            raise ValueError("Task jest już zapisany na liście zadań!")
+        self.tasks_list.append(task)
+
+    def delete_task(self, title):
+        for task in self.tasks_list:
+            if task.title == title:
+                self.tasks_list.remove(task)
+                return
+        raise TaskNotFoundError("Task nie istnieje na liście zadań!")
+
+    def __len__(self):
+        return len(self.tasks_list)
