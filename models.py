@@ -21,8 +21,8 @@ class Task():
             self.done = True
 
     def __str__(self):
-        checked = "x" if self.done else " "
-        return f"[{checked}] {self.title} ({self.minutes} min, P{self.priority})"
+        status_marker = "x" if self.done else " "
+        return f"[{status_marker}] {self.title} ({self.minutes} min, P{self.priority})"
 
     def __eq__(self, other_task):
         if not isinstance(other_task, Task):
