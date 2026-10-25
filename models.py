@@ -14,7 +14,7 @@ class Task():
         self.minutes = minutes
         self.priority = priority
         self.tags = set(tags or [])
-        self.done = False
+        self.is_done = False
 
     def mark_as_done(self):
         if not self.done:
@@ -34,6 +34,8 @@ class RecurringTask(Task):
         if not title.strip():
             raise ValueError("Tytuł nie może być pusty!")
         super().__init__(title, minutes, priority, tags)
+        if how_often_days < 0:
+            raise ValueError("Liczba dni między powtórzeniami musi być większa niż 0!")
         self.how_often_days = how_often_days
 
     def __str__(self):
@@ -50,7 +52,7 @@ class TaskManager():
 
     def delete_task(self, title):
         for task in self.tasks_list:
-            if task.title == title:
+            if task.title.lower() == title.lower():
                 self.tasks_list.remove(task)
                 return
         raise TaskNotFoundError("Task nie istnieje na liście zadań!")
