@@ -1,3 +1,11 @@
+# Menadżer zadań
+
+## Cel projektu
+
+Projekt umożliwia zarządzanie listą zadań za pomocą menu w konsoli. 
+Pozwala dodawać, wyświetlać i obsługiwać zadania, zapisywać dane w pliku JSON oraz eksportować je do CSV. 
+Zawiera również testy automatyczne sprawdzające poprawność działania funkcji.
+
 ## 1. Utworzenie środowiska wirtualnego
 
 ### Windows
@@ -26,14 +34,16 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
-Po zakończeniu pracy ze środowiskiem wirtualnym można je wyłączyć:
-
-```bash
-deactivate
-```
-
-## 4. Uruchomienie testów programu
+## 4. Uruchomienie testów
 
 ```bash
 python3 -m pytest
+```
+
+## 5. Dezaktywacja środowiska wirtualnego
+
+Po zakończeniu pracy możesz wyłączyć środowisko wirtualne:
+
+```bash
+deactivate
 ```
