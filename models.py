@@ -24,38 +24,38 @@ class Task():
         checked = "x" if self.done else " "
         return f"[{checked}] {self.title} ({self.minutes} min, P{self.priority})"
 
-    def __eq__(self, other):
-        if not isinstance(other, Task):
+    def __eq__(self, other_task):
+        if not isinstance(other_task, Task):
             return NotImplemented
-        return self.title.lower() == other.title.lower()
+        return self.title.lower() == other_task.title.lower()
 
 class RecurringTask(Task):
-    def __init__(self, title, minutes, how_often_days, priority=1, tags=None):
+    def __init__(self, title, minutes, recurrence_interval_days, priority=1, tags=None):
         if not title.strip():
             raise ValueError("Tytuł nie może być pusty!")
         super().__init__(title, minutes, priority, tags)
-        if how_often_days < 0:
+        if recurrence_interval_days < 0:
             raise ValueError("Liczba dni między powtórzeniami musi być większa niż 0!")
-        self.how_often_days = how_often_days
+        self.recurrence_interval_days = recurrence_interval_days
 
     def __str__(self):
-        recurrence = "codziennie" if self.how_often_days == 1 else f"co {self.how_often_days} dni"
-        return f"{super().__str__()} ↻ {recurrence}"
+        recurrence_label = "codziennie" if self.recurrence_interval_days == 1 else f"co {self.recurrence_interval_days} dni"
+        return f"{super().__str__()} ↻ {recurrence_label}"
 
 class TaskManager():
     def __init__(self):
-        self.tasks_list = []
-    def add_task(self, task):
-        if task in self.tasks_list:
+        self.tasks = []
+    def add_task(self, new_task):
+        if new_task in self.tasks:
             raise ValueError("Task jest już zapisany na liście zadań!")
-        self.tasks_list.append(task)
+        self.tasks.append(new_task)
 
     def delete_task(self, title):
-        for task in self.tasks_list:
-            if task.title.lower() == title.lower():
-                self.tasks_list.remove(task)
+        for existing_task in self.tasks:
+            if existing_task.title.lower() == title.lower():
+                self.tasks.remove(existing_task)
                 return
         raise TaskNotFoundError("Task nie istnieje na liście zadań!")
 
     def __len__(self):
-        return len(self.tasks_list)
+        return len(self.tasks)
