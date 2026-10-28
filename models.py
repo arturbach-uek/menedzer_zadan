@@ -1,27 +1,52 @@
-class TaskNotFoundError(Exception):
-    pass
+from dataclasses import dataclass, field
+from errors import TaskDontExistError, InvalidTaskError
 
-class Task():
-    def __init__(self, title, minutes, priority=1, tags=None):
-        if not title.strip():
-            raise ValueError("Tytuł nie może być pusty!")
-        if priority not in range(1, 4):
-            raise ValueError("Priorytet musi być z zakresu 1-3!")
-        if minutes <= 0:
-            raise ValueError("Planowany czas musi być większy niż 0!")
-        
-        self.title = title
-        self.minutes = minutes
-        self.priority = priority
-        self.tags = set(tags or [])
-        self.is_done = False
+@dataclass
+class Task:
+    title: str
+    minutes: int
+    priority: int = 1
+    tags: set = field(default_factory=set)
+    is_done: bool = False
 
+    def __post_init__(self):
+        if not self.title.strip():
+            raise InvalidTaskError("title", self.title)
+        if self.priority not in range(1, 4):
+            raise InvalidTaskError("priority", self.priority)
+        if self.minutes <= 0:
+            raise InvalidTaskError("minutes", self.minutes)
+
+        self.tags = set(self.tags)
+
+    @property
+    def czy_pilne(self):
+        return not self.is_done and self.priority >= 2
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            title=data["title"],
+            minutes=data["minutes"],
+            priority=data.get("priority", 1),
+            tags=set(data.get("tags", [])),
+            is_done=data.get("is_done", False),
+        )
+
+    def to_dict(self):
+        return {
+            "title": self.title,
+            "minutes": self.minutes,
+            "priority": self.priority,
+            "tags": sorted(self.tags),
+            "is_done": self.is_done,
+        }
+    
     def mark_as_done(self):
-        if not self.done:
-            self.done = True
+        self.is_done = True
 
     def __str__(self):
-        status_marker = "x" if self.done else " "
+        status_marker = "x" if self.is_done else " "
         return f"[{status_marker}] {self.title} ({self.minutes} min, P{self.priority})"
 
     def __eq__(self, other_task):
@@ -29,17 +54,21 @@ class Task():
             return NotImplemented
         return self.title.lower() == other_task.title.lower()
 
+@dataclass(eq=False)
 class RecurringTask(Task):
-    def __init__(self, title, minutes, recurrence_interval_days, priority=1, tags=None):
-        if not title.strip():
-            raise ValueError("Tytuł nie może być pusty!")
-        super().__init__(title, minutes, priority, tags)
-        if recurrence_interval_days < 0:
+    recurrence_interval_days: int = 7
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.recurrence_interval_days <= 0:
             raise ValueError("Liczba dni między powtórzeniami musi być większa niż 0!")
-        self.recurrence_interval_days = recurrence_interval_days
 
     def __str__(self):
-        recurrence_label = "codziennie" if self.recurrence_interval_days == 1 else f"co {self.recurrence_interval_days} dni"
+        recurrence_label = (
+            "codziennie" 
+            if self.recurrence_interval_days == 1 
+            else f"co {self.recurrence_interval_days} dni"
+        )
         return f"{super().__str__()} ↻ {recurrence_label}"
 
 class TaskManager():
@@ -55,7 +84,7 @@ class TaskManager():
             if existing_task.title.lower() == title.lower():
                 self.tasks.remove(existing_task)
                 return
-        raise TaskNotFoundError("Task nie istnieje na liście zadań!")
+        raise TaskDontExistError("Task nie istnieje na liście zadań!")
 
     def __len__(self):
         return len(self.tasks)

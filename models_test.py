@@ -1,8 +1,8 @@
 import pytest
-from models import Task, TaskManager, TaskNotFoundError
+from models import Task, TaskManager, TaskDontExistError, InvalidTaskError
 
 def test_invalid_priority():
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidTaskError):
         Task("Nauczyć się Pythona", 60, priority=4)
 
 def test_task_equality_ignores_case():
@@ -26,7 +26,7 @@ def test_adding_duplicate_task():
 
 def test_deleting_nonexistent_task():
     manager = TaskManager()
-    with pytest.raises(TaskNotFoundError):
+    with pytest.raises(TaskDontExistError):
         manager.delete_task("Nieistniejące zadanie")
 
 def test_delete_existing_task():
