@@ -11,11 +11,11 @@ class Task:
 
     def __post_init__(self):
         if not self.title.strip():
-            raise InvalidTaskError("Tytuł nie może być pusty!")
+            raise InvalidTaskError("title", self.title)
         if self.priority not in range(1, 4):
-            raise InvalidTaskError("Priorytet musi być z zakresu 1-3!")
+            raise InvalidTaskError("priority", self.priority)
         if self.minutes <= 0:
-            raise InvalidTaskError("Planowany czas musi być większy niż 0!")
+            raise InvalidTaskError("minutes", self.minutes)
 
         self.tags = set(self.tags)
 
