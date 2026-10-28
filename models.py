@@ -1,6 +1,3 @@
-class TaskNotFoundError(Exception):
-    pass
-
 class Task():
     def __init__(self, title, minutes, priority=1, tags=None):
         if not title.strip():
