@@ -1,3 +1,4 @@
+from errors import TaskDontExistError
 from models import Task
 import sqlite3
 
@@ -44,3 +45,19 @@ def get_all_tasks(conn, order_by="priority") -> list[Task]:
         cursor = conn.execute(select_query, (allowed_columns[order_by], ))
         tasks = [Task.from_dict(dict(task)) for task in cursor.fetchall()]
     return tasks
+
+def mark_as_done(conn, task_id) -> bool:
+    update_query = "UPDATE tasks SET is_done = 1 WHERE id = ?"
+    with conn:
+        cursor = conn.execute(update_query, (task_id, ))
+        if cursor.rowcount == 0:
+            raise TaskDontExistError(task_id)
+    return True
+
+def delete_task(conn, task_id) -> bool:
+    delete_query = "DELETE FROM tasks WHERE id = ?"
+    with conn:
+        cursor = conn.execute(delete_query, (task_id, ))
+        if cursor.rowcount == 0:
+            raise TaskDontExistError(task_id)
+    return True
