@@ -1,5 +1,6 @@
 import pytest
 from models import Task, TaskManager, TaskDontExistError, InvalidTaskError
+from dataclasses import asdict
 
 def test_invalid_priority():
     with pytest.raises(InvalidTaskError):
@@ -26,8 +27,14 @@ def test_adding_duplicate_task():
 
 def test_deleting_nonexistent_task():
     manager = TaskManager()
-    with pytest.raises(TaskDontExistError):
-        manager.delete_task("Nieistniejące zadanie")
+    with pytest.raises(TaskDontExistError) as info:
+        manager.delete_task("Pranie")
+    assert info.value.task_id == "Pranie"
+
+def test_task_dict_round_trip():
+    task = Task("Pranie", 30)
+    restored_task = Task.from_dict(task.to_dict())
+    assert asdict(restored_task) == asdict(task)
 
 def test_delete_existing_task():
     manager = TaskManager()
