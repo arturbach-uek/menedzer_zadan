@@ -34,7 +34,6 @@ class Task:
             tags=set(data.get("tags", [])),
             is_done=data.get("is_done", False),
         )
-
     def to_dict(self):
         return {
             "title": self.title,
