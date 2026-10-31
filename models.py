@@ -3,6 +3,7 @@ from errors import TaskManagerError, TaskDontExistError, InvalidTaskError
 
 @dataclass
 class Task:
+    id: int | None = None
     title: str
     minutes: int
     priority: int = 1
@@ -26,6 +27,7 @@ class Task:
     @classmethod
     def from_dict(cls, data: dict):
         return cls(
+            id=data.get("id"),
             title=data["title"],
             minutes=data["minutes"],
             priority=data.get("priority", 1),
