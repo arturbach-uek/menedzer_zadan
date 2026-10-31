@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from pathlib import Path
 import json
 import csv
+from models import Task
 
 class TaskNotFoundError(Exception):
     pass
@@ -45,7 +46,7 @@ def save_tasks(tasks: list[dict], path: Path) -> None:
 
 def export_tasks_csv(tasks: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = ["title", "tags", "minutes", "priority", "done"]
+    fieldnames = ["title", "tags", "minutes", "priority", "done", "recurrence_interval_days"]
     with open(path, "w", encoding="utf-8-sig", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=";")
         writer.writeheader()
@@ -132,11 +133,11 @@ def complete_task(tasks: list[dict], task_number: int) -> bool:
     
     tasks[task_number - 1]["done"] = True
     return True
-def get_raport(tasks: list[dict]) -> tuple[list[dict], Iterator[int], set[str]]:
-    incomplete_tasks = [task for task in tasks if not task["done"]]
-    sorted_tasks = sorted(incomplete_tasks, key=lambda task: (-task["priority"], task["minutes"]))
-    total_minutes = (task["minutes"] for task in incomplete_tasks)
-    tags = {tag for task in incomplete_tasks for tag in task["tags"]}
+def get_raport(tasks: list[Task]) -> tuple[list[dict], Iterator[int], set[str]]:
+    incomplete_tasks = [task for task in tasks if not task.is_done]
+    sorted_tasks = sorted(incomplete_tasks, key=lambda task: (-task.priority, task.minutes))
+    total_minutes = (task.minutes for task in incomplete_tasks)
+    tags = {tag for task in incomplete_tasks for tag in task.tags}
     return sorted_tasks, total_minutes, tags
 
 def get_todays_plan(tasks: list[dict], minutes_limit: int = 240):
@@ -144,10 +145,10 @@ def get_todays_plan(tasks: list[dict], minutes_limit: int = 240):
     total_minutes = 0
 
     for task in sorted_tasks:
-        if total_minutes + task["minutes"] > minutes_limit:
+        if total_minutes + task.minutes > minutes_limit:
             break
 
-        total_minutes += task["minutes"]
+        total_minutes += task.minutes
         yield task
 
 if __name__ == "__main__":

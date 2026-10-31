@@ -1,8 +1,10 @@
+from errors import TaskManagerError
 import pytest
-from models import Task, TaskManager, TaskNotFoundError
+from models import Task, TaskManager, TaskDontExistError, InvalidTaskError
+from dataclasses import asdict
 
 def test_invalid_priority():
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidTaskError):
         Task("Nauczyć się Pythona", 60, priority=4)
 
 def test_task_equality_ignores_case():
@@ -21,13 +23,19 @@ def test_adding_duplicate_task():
     task1 = Task("Napisać raport", 45)
     task2 = Task("NAPISAĆ RAPORT", 60)
     manager.add_task(task1)
-    with pytest.raises(ValueError):
+    with pytest.raises(TaskManagerError):
         manager.add_task(task2)
 
 def test_deleting_nonexistent_task():
     manager = TaskManager()
-    with pytest.raises(TaskNotFoundError):
-        manager.delete_task("Nieistniejące zadanie")
+    with pytest.raises(TaskDontExistError) as info:
+        manager.delete_task("Pranie")
+    assert info.value.task_id == "Pranie"
+
+def test_task_dict_round_trip():
+    task = Task("Pranie", 30)
+    restored_task = Task.from_dict(task.to_dict())
+    assert asdict(restored_task) == asdict(task)
 
 def test_delete_existing_task():
     manager = TaskManager()
