@@ -27,3 +27,20 @@ def search_tasks(conn, phrase: str) -> list[Task]:
     
     found_tasks = [Task.from_dict(dict(task)) for task in cursor.fetchall()]
     return found_tasks
+
+def get_all_tasks(conn, order_by="priority") -> list[Task]:
+    allowed_columns = {
+        "priority": "priority DESC", 
+        "minutes": "minutes", 
+        "title": "title"
+    }
+
+    order_by = order_by.lower().strip()
+    if order_by not in allowed_columns:
+        raise ValueError("Nieprawidłowe sortowanie")
+
+    select_query = "SELECT title, minutes, priority FROM tasks ORDER BY ?"
+    with conn:
+        cursor = conn.execute(select_query, (allowed_columns[order_by], ))
+        tasks = [Task.from_dict(dict(task)) for task in cursor.fetchall()]
+    return tasks
