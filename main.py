@@ -60,7 +60,7 @@ def add_task_menu(manager: TaskManager) -> None:
         save_task_manager(manager)
         print(f"Pomyślnie dodano zadanie: {title}")
 
-    except (TaskManagerError, ValueError) as error:
+    except TaskManagerError as error:
         print(f"Błąd: {error}")
 
 def show_tasks(manager: TaskManager) -> None:
@@ -101,8 +101,6 @@ def delete_task_menu(manager: TaskManager) -> None:
         save_task_manager(manager)
         print(f"Usunięto zadanie: {title}")
     except TaskManagerError as error:
-        print(f"Błąd: {error}")
-    except ValueError as error:
         print(f"Błąd: {error}")
 
 def show_report(manager: TaskManager) -> None:

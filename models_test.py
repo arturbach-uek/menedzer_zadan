@@ -1,3 +1,4 @@
+from errors import TaskManagerError
 import pytest
 from models import Task, TaskManager, TaskDontExistError, InvalidTaskError
 from dataclasses import asdict
@@ -22,7 +23,7 @@ def test_adding_duplicate_task():
     task1 = Task("Napisać raport", 45)
     task2 = Task("NAPISAĆ RAPORT", 60)
     manager.add_task(task1)
-    with pytest.raises(ValueError):
+    with pytest.raises(TaskManagerError):
         manager.add_task(task2)
 
 def test_deleting_nonexistent_task():

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from errors import TaskDontExistError, InvalidTaskError
+from errors import TaskManagerError, TaskDontExistError, InvalidTaskError
 
 @dataclass
 class Task:
@@ -76,7 +76,7 @@ class TaskManager():
         self.tasks = []
     def add_task(self, new_task):
         if new_task in self.tasks:
-            raise ValueError("Task jest już zapisany na liście zadań!")
+            raise TaskManagerError("Task jest już zapisany na liście zadań!")
         self.tasks.append(new_task)
 
     def delete_task(self, title):
@@ -84,7 +84,7 @@ class TaskManager():
             if existing_task.title.lower() == title.lower():
                 self.tasks.remove(existing_task)
                 return
-        raise TaskDontExistError("Task nie istnieje na liście zadań!")
+        raise TaskDontExistError(title)
 
     def __len__(self):
         return len(self.tasks)
