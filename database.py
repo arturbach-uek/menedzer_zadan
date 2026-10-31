@@ -1,6 +1,7 @@
 from errors import TaskDontExistError
 from models import Task
 import sqlite3
+import json
 
 def create_table(conn):
     create_query = """
@@ -61,3 +62,27 @@ def delete_task(conn, task_id) -> bool:
         if cursor.rowcount == 0:
             raise TaskDontExistError(task_id)
     return True
+
+def import_from_json(conn, file_path) -> int:
+    with conn:
+        cursor = conn.cursor()
+
+        count_query = "SELECT COUNT(*) FROM tasks"
+        tasks_count = cursor.execute(count_query)
+        if tasks_count.fetchone()[0]:
+            return 0
+        
+        with open(file_path, "r", encoding="utf-8-sig") as file:
+            tasks_data = [
+                (
+                    task.get("title"), 
+                    task.get("minutes"), 
+                    task.get("priority", 1), 
+                    task.get("is_done", 0)
+                ) 
+                for task in json.load(file)
+            ]
+        
+        insert_query = "INSERT INTO tasks(title, minutes, priority, is_done) VALUES (?, ?, ?, ?)"
+        cursor = conn.executemany(insert_query, tasks_data)
+    return cursor.rowcount
