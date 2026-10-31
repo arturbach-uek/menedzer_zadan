@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from pathlib import Path
 import json
 import csv
+from models import Task
 
 class TaskNotFoundError(Exception):
     pass
@@ -132,7 +133,7 @@ def complete_task(tasks: list[dict], task_number: int) -> bool:
     
     tasks[task_number - 1]["done"] = True
     return True
-def get_raport(tasks: list[dict]) -> tuple[list[dict], Iterator[int], set[str]]:
+def get_raport(tasks: list[Task]) -> tuple[list[dict], Iterator[int], set[str]]:
     incomplete_tasks = [task for task in tasks if not task.is_done]
     sorted_tasks = sorted(incomplete_tasks, key=lambda task: (-task.priority, task.minutes))
     total_minutes = (task.minutes for task in incomplete_tasks)
