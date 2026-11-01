@@ -63,7 +63,10 @@ class RecurringTask(Task):
         super().__post_init__()
         if self.recurrence_interval_days <= 0:
             raise ValueError("Liczba dni między powtórzeniami musi być większa niż 0!")
-
+        
+    def to_dict(self):
+        return super().to_dict() | {"recurrence_interval_days": self.recurrence_interval_days}
+    
     def __str__(self):
         recurrence_label = (
             "codziennie" 
