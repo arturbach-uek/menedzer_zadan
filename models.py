@@ -36,6 +36,7 @@ class Task:
         )
     def to_dict(self):
         return {
+            "if": self.id,
             "title": self.title,
             "minutes": self.minutes,
             "priority": self.priority,
