@@ -84,11 +84,11 @@ class TaskManager():
         for task in self.tasks:
             if task.id == task_id:
                 return task
-        raise TaskDontExistError(f"Task z ID: {task_id} nie istnieje!", task_id)
+        raise TaskDontExistError(task_id)
     
     def add_task(self, new_task):
         if new_task in self.tasks:
-            raise TaskManagerError(f"Task '{new_task.title}' jest już zapisany na liście zadań!")
+            raise TaskManagerError(new_task.id)
         self.tasks.append(new_task)
 
     def delete_task(self, title):
@@ -96,7 +96,7 @@ class TaskManager():
             if existing_task.title.lower() == title.lower():
                 self.tasks.remove(existing_task)
                 return
-        raise TaskDontExistError(f"Zadanie '{title}' nie istnieje!", title)
+        raise TaskDontExistError(title)
 
     def __len__(self):
         return len(self.tasks)
