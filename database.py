@@ -41,7 +41,7 @@ def get_all_tasks(conn, order_by="priority") -> list[Task]:
     if order_by not in allowed_columns:
         raise ValueError("Nieprawidłowe sortowanie")
 
-    select_query = "SELECT title, minutes, priority FROM tasks ORDER BY ?"
+    select_query = "SELECT id, title, minutes, priority, is_done FROM tasks ORDER BY ?"
     with conn:
         cursor = conn.execute(select_query, (allowed_columns[order_by], ))
         tasks = [Task.from_dict(dict(task)) for task in cursor.fetchall()]
