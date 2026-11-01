@@ -4,7 +4,7 @@ class TaskManagerError(Exception):
 class TaskDontExistError(TaskManagerError):
     def __init__(self, task_id):
         self.task_id = task_id
-        super().__init__(f"zadanie „{task_id}” nie istnieje.")
+        super().__init__(f"Zadanie „{task_id}” nie istnieje.")
 
 class InvalidTaskError(TaskManagerError):
     def __init__(self, field, value):
