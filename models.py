@@ -79,6 +79,13 @@ class RecurringTask(Task):
 class TaskManager():
     def __init__(self):
         self.tasks = []
+
+    def get_task_by_id(self, task_id):
+        for task in self.tasks:
+            if task.id == task_id:
+                return task
+        raise TaskDontExistError(task_id)
+    
     def add_task(self, new_task):
         if new_task in self.tasks:
             raise TaskManagerError("Task jest już zapisany na liście zadań!")
