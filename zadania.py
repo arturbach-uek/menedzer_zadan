@@ -46,7 +46,7 @@ def save_tasks(tasks: list[dict], path: Path) -> None:
 
 def export_tasks_csv(tasks: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = ["title", "tags", "minutes", "priority", "done", "recurrence_interval_days"]
+    fieldnames = ["id", "title", "tags", "minutes", "priority", "is_done", "recurrence_interval_days"]
     with open(path, "w", encoding="utf-8-sig", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=";")
         writer.writeheader()
