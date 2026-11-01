@@ -93,7 +93,7 @@ class TaskManager():
 
     def delete_task(self, title):
         for existing_task in self.tasks:
-            if existing_task.id.lower() == title.lower():
+            if existing_task.title.lower() == title.lower():
                 self.tasks.remove(existing_task)
                 return
         raise TaskDontExistError(f"Zadanie '{title}' nie istnieje!", title)
