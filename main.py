@@ -1,33 +1,21 @@
 from pathlib import Path
 from models import Task, RecurringTask, TaskManager
-from errors import TaskManagerError
-from zadania import get_raport, get_todays_plan, load_tasks, save_tasks, export_tasks_csv
+from errors import TaskManagerError, TaskDontExistError, InvalidTaskError
+from zadania import get_raport, get_todays_plan, export_tasks_csv
+import database
+import sqlite3
 
-tasks_path = Path.cwd() / "database" / "tasks.json"
-csv_path = Path.cwd() / "database" / "tasks.csv"
+BASE_DIR = Path(__file__).resolve().parent
 
-def task_from_dict(data: dict) -> Task:
-    task_data = {**data, "is_done": data.get("is_done", data.get("done", False))}
-    if "recurrence_interval_days" in data:
-        return RecurringTask(
-            title=task_data["title"],
-            minutes=task_data["minutes"],
-            priority=task_data.get("priority", 1),
-            tags=set(task_data.get("tags", [])),
-            is_done=task_data["is_done"],
-            recurrence_interval_days=data["recurrence_interval_days"],
-        )
-    return Task.from_dict(task_data)
+json_path = BASE_DIR / "database" / "tasks.json"
+csv_path = BASE_DIR / "database" / "tasks.csv"
+db_path = BASE_DIR / "database" / "tasks.db"
 
-def task_to_dict(task: Task) -> dict:
-    data = task.to_dict()
-    data["done"] = data.pop("is_done")
-    if isinstance(task, RecurringTask):
-        data["recurrence_interval_days"] = task.recurrence_interval_days
-    return data
-
-def save_task_manager(manager: TaskManager) -> None:
-    save_tasks([task_to_dict(task) for task in manager.tasks], tasks_path)
+def get_db_connection():
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def add_task_menu(manager: TaskManager) -> None:
     title = input("Nazwa zadania: ").strip()
@@ -37,76 +25,104 @@ def add_task_menu(manager: TaskManager) -> None:
     tags = {tag.strip() for tag in tags_input.split(",") if tag.strip()}
 
     try:
-        minutes = int(input("Planowany czas (min): "))
+        minutes = int(input("Planowany czas (min): ").strip())
         priority_input = input("Priorytet (1-3, domyślnie 1): ").strip()
         priority = int(priority_input) if priority_input else 1
-    except ValueError:
-        print("Błąd: czas i priorytet muszą być liczbami całkowitymi.")
-        return
-
-    done_input = input("Czy oznaczyć jako zrobione (tak/nie, domyślnie nie): ").strip().lower()
-    is_done = done_input == "tak"
-    recurring_input = input("Czy zadanie jest cykliczne (tak/nie): ").strip().lower()
-
-    try:
+        recurring_input = input("Czy zadanie jest cykliczne (tak/nie): ").strip().lower()
         if recurring_input == "tak":
             interval_input = input("Co ile dni powtarzać zadanie (domyślnie 7): ").strip()
             interval = int(interval_input) if interval_input else 7
-            task = RecurringTask(title, minutes, priority, tags, is_done, interval)
+            task = RecurringTask(
+                title=title, 
+                minutes=minutes, 
+                priority=priority, 
+                tags=tags, 
+                recurrence_interval_days=interval
+            )
         else:
-            task = Task(title, minutes, priority, tags, is_done)
+            task = Task(title=title, minutes=minutes, priority=priority, tags=tags)
+    except InvalidTaskError as error:
+        print(f"Błąd: {error}")
+        return
+
+    try:
+        conn = get_db_connection()
+        task_id = database.add_task(conn, task)
 
         manager.add_task(task)
-        save_task_manager(manager)
-        print(f"Pomyślnie dodano zadanie: {title}")
 
-    except TaskManagerError as error:
+        task.id = task_id
+        print(f"Pomyślnie dodano zadanie: {title} (id: {task_id})")
+
+    except (TaskManagerError, ValueError) as error:
         print(f"Błąd: {error}")
+    finally:
+        conn.close()
 
-def show_tasks(manager: TaskManager) -> None:
-    if not manager.tasks:
-        print("Brak zadań!")
-        return
-
-    for number, task in enumerate(manager.tasks, start=1):
-        print(f"{number}. {task}")
-        if isinstance(task, RecurringTask):
-            print(f"Powtarzanie: co {task.recurrence_interval_days} dni")
+def show_tasks() -> None:
+    try:
+        order_by = input("Sortuj po (priority/minutes/title): ") or "priority"
+        conn = get_db_connection()
+        tasks = database.get_all_tasks(conn, order_by)
+        print(*tasks, sep="\n")
+    except ValueError as error:
+        print(f"Błąd: {error}")
+    finally:
+        conn.close()
 
 def complete_task_menu(manager: TaskManager) -> None:
-    if not manager.tasks:
-        print("Nie można oznaczyć zadania: lista jest pusta.")
-        return
-
     try:
-        task_number = int(input(f"Numer zadania (1-{len(manager)}): "))
-    except ValueError:
-        print("Błąd: numer zadania musi być liczbą całkowitą.")
-        return
+        task_id = int(input("ID zadania do oznaczenia jako zrobione: "))
 
-    if task_number < 1 or task_number > len(manager):
-        print("Nie ma takiego zadania!")
-        return
+        conn = get_db_connection()
+        database.mark_as_done(conn, task_id)
 
-    task = manager.tasks[task_number - 1]
-    task.mark_as_done()
-    save_task_manager(manager)
-    print(f"Pomyślnie oznaczono zadanie {task_number} jako zrobione!")
+        task = manager.get_task_by_id(task_id)
+        task.mark_as_done()
+
+        print(f"Pomyślnie oznaczono zadanie '{task.title}' jako zrobione!")
+    except (TaskDontExistError, ValueError) as error:
+        print(f"Błąd: {error}")
+    finally:
+        conn.close()
 
 def delete_task_menu(manager: TaskManager) -> None:
-    title = input("Nazwa zadania do usunięcia: ").strip()
-
     try:
-        manager.delete_task(title)
-        save_task_manager(manager)
-        print(f"Usunięto zadanie: {title}")
-    except TaskManagerError as error:
+        task_id = int(input("ID zadania do usunięcia: "))
+
+        conn = get_db_connection()
+        database.delete_task(conn, task_id)
+
+        task = manager.get_task_by_id(task_id)
+        manager.delete_task(task.title)
+
+        print(f"Pomyślnie usunięto zadanie '{task.title}' z listy!")
+    except ValueError as error:
         print(f"Błąd: {error}")
+    finally:
+        conn.close()
 
-def show_report(manager: TaskManager) -> None:
-    sorted_tasks, total_minutes, tags = get_raport(manager.tasks)
+def search_tasks_menu() -> None:
+    try:
+        phrase = input("Szukaj zadania: ").strip()
+        conn = get_db_connection()
+        tasks = database.search_tasks(conn, phrase)
+        print(*tasks, sep="\n")
+    except ValueError as error:
+        print(f"Błąd: {error}")
+    finally:
+        conn.close()
+def show_report() -> None:
+    try:
+        conn = get_db_connection()
+        tasks = database.get_all_tasks(conn)
+    except ValueError as error:
+        print(f"Błąd: {error}")
+    finally:
+        conn.close()
+
+    sorted_tasks, total_minutes, tags = get_raport(tasks)
     total_minutes = sum(total_minutes)
-
     print(f"\n{'=' * 45}")
     print(f"{'RAPORT ZADAŃ':^45}")
     print(f"{'=' * 45}")
@@ -114,8 +130,8 @@ def show_report(manager: TaskManager) -> None:
     if not sorted_tasks:
         print("Brak niezrobionych zadań!")
     else:
-        for number, task in enumerate(sorted_tasks, start=1):
-            print(f"\n{number}. {task.title}")
+        for task in sorted_tasks:
+            print(f"\n{task.id}. {task.title}")
             print(f"{'Priorytet:':<15} {task.priority}/3")
             print(f"{'Czas:':<15} {task.minutes} min")
 
@@ -128,21 +144,28 @@ def show_report(manager: TaskManager) -> None:
     print(f"{'PLAN NA DZIŚ':^45}")
     print(f"{'=' * 45}")
 
-    todays_plan = list(get_todays_plan(manager.tasks))
+    todays_plan = list(get_todays_plan(tasks))
     plan_minutes = sum(task.minutes for task in todays_plan)
     
     if not todays_plan:
         print("Brak zadań do zaplanowania.")
     else:
-        for number, task in enumerate(todays_plan, start=1):
-            print(f"{number}. {task.title} ({task.minutes} min)")
+        for task in todays_plan:
+            print(f"{task.id}. {task.title} ({task.minutes} min)")
         print(f"\nŁączny czas planu: {plan_minutes} min")
 
     print(f"{'=' * 45}\n")
 
-def show_summary(manager: TaskManager) -> None:
-    tasks = manager.tasks
-    total_tasks = len(manager)
+def show_summary() -> None:
+    try:
+        conn = get_db_connection()
+        tasks = database.get_all_tasks(conn)
+    except ValueError as error:
+        print(f"Błąd: {error}")
+    finally:
+        conn.close()
+
+    total_tasks = len(tasks)
     completed_tasks = sum(task.is_done for task in tasks)
     remaining_tasks = total_tasks - completed_tasks
     total_minutes = sum(task.minutes for task in tasks)
@@ -154,39 +177,45 @@ def show_summary(manager: TaskManager) -> None:
     print(f"Pozostało: {remaining_tasks}")
     print(f"Łączny planowany czas: {total_minutes} min")
     print(f"Czas zrobionych zadań: {completed_minutes} min")
-    print("Do widzenia!")
 
 def main():
-    saved_tasks = load_tasks(tasks_path)
+    conn = get_db_connection()
+
+    try:
+        database.create_table(conn)
+        database.import_from_json(conn, json_path)
+        tasks = database.get_all_tasks(conn)
+    finally:
+        conn.close()
+
     manager = TaskManager()
-    manager.tasks = [task_from_dict(data) for data in saved_tasks]
+    manager.tasks = tasks
     actions = {
         "1": lambda: add_task_menu(manager),
-        "2": lambda: show_tasks(manager),
-        "3": lambda: complete_task_menu(manager),
-        "4": lambda: show_report(manager),
-        "5": lambda: export_tasks_csv(
-            [task_to_dict(task) for task in manager.tasks],
-            csv_path,
-        ),
-        "6": lambda: delete_task_menu(manager),
-        "7": lambda: show_summary(manager),
+        "2": show_tasks,
+        "3": search_tasks_menu,
+        "4": lambda: complete_task_menu(manager),
+        "5": lambda: delete_task_menu(manager),
+        "6": lambda: export_tasks_csv([task.to_dict() for task in tasks], csv_path),
+        "7": show_report,
+        "8": show_summary,
     }
 
     while True:
-        print("\n1. Dodaj zadanie")
+        print()
+        print("1. Dodaj zadanie")
         print("2. Pokaż zadania")
-        print("3. Oznacz jako zrobione")
-        print("4. Raport")
-        print("5. Eksport do CSV")
-        print("6. Usuń zadanie")
-        print("7. Koniec")
+        print("3. Szukaj zadania")
+        print("4. Ustaw jako zrobione")
+        print("5. Usuń zadanie")
+        print("6. Eksportuj zadania do csv")
+        print("7. Pokaz raport")
+        print("8. Pokaz podsumowanie")
+        print("9. Koniec")
 
         action = input("Podaj numer akcji (1-7): ").strip()
 
-        if action == "7":
-            save_task_manager(manager)
-            actions[action]()
+        if action == "9":
             break
 
         selected_action = actions.get(action)
