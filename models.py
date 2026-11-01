@@ -3,9 +3,9 @@ from errors import TaskManagerError, TaskDontExistError, InvalidTaskError
 
 @dataclass
 class Task:
-    id: int | None = None
     title: str
     minutes: int
+    id: int | None = None
     priority: int = 1
     tags: set = field(default_factory=set)
     is_done: bool = False
@@ -36,7 +36,7 @@ class Task:
         )
     def to_dict(self):
         return {
-            "if": self.id,
+            "id": self.id,
             "title": self.title,
             "minutes": self.minutes,
             "priority": self.priority,
@@ -49,7 +49,7 @@ class Task:
 
     def __str__(self):
         status_marker = "x" if self.is_done else " "
-        return f"[{status_marker}] {self.title} ({self.minutes} min, P{self.priority})"
+        return f"{self.id} | [{status_marker}] {self.title} ({self.minutes} min, P{self.priority})"
 
     def __eq__(self, other_task):
         if not isinstance(other_task, Task):
@@ -93,7 +93,7 @@ class TaskManager():
 
     def delete_task(self, title):
         for existing_task in self.tasks:
-            if existing_task.title.lower() == title.lower():
+            if existing_task.id.lower() == title.lower():
                 self.tasks.remove(existing_task)
                 return
         raise TaskDontExistError(title)
