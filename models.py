@@ -88,7 +88,7 @@ class TaskManager():
     
     def add_task(self, new_task):
         if new_task in self.tasks:
-            raise TaskManagerError(new_task.id)
+            raise TaskManagerError(new_task.title)
         self.tasks.append(new_task)
 
     def delete_task(self, title):
