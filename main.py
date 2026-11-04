@@ -150,8 +150,8 @@ def show_report() -> None:
     print(f"{'=' * 45}\n")
 
 def show_summary() -> None:
+    conn = database.get_connection(db_path)
     try:
-        conn = database.get_connection(db_path)
         tasks = database.get_all_tasks(conn)
     except ValueError as error:
         print(f"Błąd: {error}")
