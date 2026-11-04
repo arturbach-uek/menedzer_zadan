@@ -27,7 +27,7 @@ def test_sort_tasks_by_priority(conn):
     database.add_task(conn, Task("Nauka Pythona", 60, priority=3))
     database.add_task(conn, Task("Zakupy", 20, priority=2))
     tasks = database.get_all_tasks(conn)
-    assert [task.priority for task in tasks] == [1, 3, 2]
+    assert [task.priority for task in tasks] == [3, 2, 1]
 
 def test_task_title_with_apostrophe(conn):
     task = Task("Zadzwoń do O'Brien", 15)
