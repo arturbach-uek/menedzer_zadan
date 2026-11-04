@@ -41,7 +41,7 @@ def add_task_menu(manager: TaskManager) -> None:
             )
         else:
             task = Task(title=title, minutes=minutes, priority=priority, tags=tags)
-    except InvalidTaskError as error:
+    except (InvalidTaskError, ValueError) as error:
         print(f"Błąd: {error}")
         return
 
