@@ -5,6 +5,7 @@ from zadania import get_raport, get_todays_plan, export_tasks_csv
 import database
 
 BASE_DIR = Path(__file__).resolve().parent
+PRIORITY_NAMES = {1: "niski", 2: "średni", 3: "wysoki"}
 
 json_path = BASE_DIR / "database" / "tasks.json"
 json_path.parent.mkdir(parents=True, exist_ok=True)
@@ -171,6 +172,27 @@ def show_summary() -> None:
     print(f"Łączny planowany czas: {total_minutes} min")
     print(f"Czas zrobionych zadań: {completed_minutes} min")
 
+def show_tag_reports() -> None:
+    conn = database.get_connection(db_path)
+    try:
+        minutes_by_tag = database.get_minutes_by_tag(conn)
+        priority_counts = database.get_priority_counts(conn, 2)
+        unused_tags = database.get_unused_tags(conn)
+    finally:
+        conn.close()
+
+    minutes_text = ", ".join(f"{name} {minutes}" for name, minutes in minutes_by_tag)
+    priorities_text = ", ".join(
+        f"{PRIORITY_NAMES[priority]} ({priority}) – {count} zadania"
+        for priority, count in priority_counts
+    )
+    unused_text = ", ".join(unused_tags)
+
+    print("\n=== Raporty ===")
+    print(f"Minuty według tagów: {minutes_text or 'brak'}")
+    print(f"Priorytety z co najmniej 2 zadaniami: {priorities_text or 'brak'}")
+    print(f"Tagi bez zadań: {unused_text or 'brak'}")
+
 def main():
     conn = database.get_connection(db_path)
     try:
@@ -191,6 +213,7 @@ def main():
         "6": lambda: export_tasks_csv([task.to_dict() for task in tasks], csv_path),
         "7": show_report,
         "8": show_summary,
+        "9": show_tag_reports,
     }
 
     while True:
@@ -203,11 +226,12 @@ def main():
         print("6. Eksportuj zadania do csv")
         print("7. Pokaz raport")
         print("8. Pokaz podsumowanie")
-        print("9. Koniec")
+        print("9. Raporty")
+        print("10. Koniec")
 
-        action = input("Podaj numer akcji (1-9): ").strip()
+        action = input("Podaj numer akcji (1-10): ").strip()
 
-        if action == "9":
+        if action == "10":
             break
 
         selected_action = actions.get(action)
