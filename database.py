@@ -122,6 +122,18 @@ def delete_task(conn, task_id) -> bool:
             raise TaskDontExistError(task_id)
     return True
 
+def get_minutes_by_tag(conn) -> list[tuple[str, int]]:
+    select_query = """
+        SELECT tags.name, SUM(tasks.minutes) AS total_minutes
+        FROM tags
+        JOIN task_tags ON task_tags.tag_id = tags.id
+        JOIN tasks ON tasks.id = task_tags.task_id
+        GROUP BY tags.name
+        ORDER BY total_minutes DESC
+    """
+    rows = conn.execute(select_query).fetchall()
+    return [(row["name"], row["total_minutes"]) for row in rows]
+
 def import_from_json(conn, file_path) -> int:
     if not Path(file_path).exists():
         return 0
