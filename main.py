@@ -71,10 +71,9 @@ def show_tasks() -> None:
         conn.close()
 
 def complete_task_menu(manager: TaskManager) -> None:
+    conn = get_db_connection()
     try:
         task_id = int(input("ID zadania do oznaczenia jako zrobione: "))
-
-        conn = get_db_connection()
         database.mark_as_done(conn, task_id)
 
         task = manager.get_task_by_id(task_id)
@@ -87,17 +86,16 @@ def complete_task_menu(manager: TaskManager) -> None:
         conn.close()
 
 def delete_task_menu(manager: TaskManager) -> None:
+    conn = get_db_connection()
     try:
         task_id = int(input("ID zadania do usunięcia: "))
-
-        conn = get_db_connection()
         database.delete_task(conn, task_id)
 
         task = manager.get_task_by_id(task_id)
         manager.delete_task(task.title)
 
         print(f"Pomyślnie usunięto zadanie '{task.title}' z listy!")
-    except ValueError as error:
+    except (TaskDontExistError, ValueError) as error:
         print(f"Błąd: {error}")
     finally:
         conn.close()
