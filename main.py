@@ -44,7 +44,7 @@ def add_task_menu(manager: TaskManager) -> None:
     except (InvalidTaskError, ValueError) as error:
         print(f"Błąd: {error}")
         return
-    
+
     conn = get_db_connection()
     try:
         manager.add_task(task)
@@ -106,7 +106,7 @@ def search_tasks_menu() -> None:
         print(f"Błąd: {error}")
     finally:
         conn.close()
-        
+
 def show_report() -> None:
     conn = get_db_connection()
     try:
