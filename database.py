@@ -126,24 +126,26 @@ def import_from_json(conn, file_path) -> int:
     if not Path(file_path).exists():
         return 0
     with conn:
-        cursor = conn.cursor()
-
         count_query = "SELECT COUNT(*) FROM tasks"
-        tasks_count = cursor.execute(count_query)
-        if tasks_count.fetchone()[0]:
+        if conn.execute(count_query).fetchone()[0]:
             return 0
-        
+
         with open(file_path, "r", encoding="utf-8-sig") as file:
-            tasks_data = [
-                (
-                    task.get("title"), 
-                    task.get("minutes"), 
-                    task.get("priority", 1), 
-                    task.get("is_done", 0)
-                ) 
-                for task in json.load(file)
-            ]
-        
+            tasks_data = json.load(file)
+
         insert_query = "INSERT INTO tasks(title, minutes, priority, is_done) VALUES (?, ?, ?, ?)"
-        cursor = conn.executemany(insert_query, tasks_data)
-    return cursor.rowcount
+        imported_count = 0
+        for task in tasks_data:
+            cursor = conn.execute(insert_query, (
+                task.get("title"),
+                task.get("minutes"),
+                task.get("priority", 1),
+                task.get("is_done", 0),
+            ))
+            task_id = cursor.lastrowid
+
+            for tag_name in task.get("tags", []):
+                add_tag(conn, task_id, tag_name)
+
+            imported_count += 1
+    return imported_count
