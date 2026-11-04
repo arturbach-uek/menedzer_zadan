@@ -1,4 +1,4 @@
-from errors import TaskDontExistError
+from errors import TaskManagerError, TaskDontExistError
 from models import Task
 from pathlib import Path
 import sqlite3
@@ -58,6 +58,28 @@ def add_tag(conn, task_id: int, tag_name: str) -> None:
 
         insert_task_tag_query = "INSERT INTO task_tags(task_id, tag_id) VALUES (?, ?)"
         conn.execute(insert_task_tag_query, (task_id, tag_id))
+
+def remove_tag(conn, task_id: int, tag_name: str) -> bool:
+    delete_query = "DELETE FROM task_tags WHERE task_id = ? AND tag_id = (SELECT id FROM tags WHERE name = ?)"
+    with conn:
+        cursor = conn.execute(delete_query, (task_id, tag_name))
+        if cursor.rowcount == 0:
+            raise TaskManagerError(f"Tag '{tag_name}' nie należy do zadania '{task_id}!")
+    return True
+
+def get_tasks_with_tag(conn, tag_name: str) -> list[Task]:
+    search_query = """
+        SELECT tasks.id, tasks.title, tasks.minutes, tasks.priority, tasks.is_done
+        FROM tasks
+        JOIN task_tags ON task_tags.task_id = tasks.id
+        JOIN tags ON tags.id = task_tags.tag_id
+        WHERE tags.name = ?
+    """
+    with conn:
+        cursor = conn.execute(search_query, (tag_name, ))
+
+    found_tasks = [Task.from_dict(dict(task)) for task in cursor.fetchall()]
+    return found_tasks
 
 def search_tasks(conn, phrase: str) -> list[Task]:
     search_query = "SELECT * FROM tasks WHERE title LIKE ?"
