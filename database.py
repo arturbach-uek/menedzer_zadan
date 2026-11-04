@@ -48,6 +48,17 @@ def add_task(conn, task: Task) -> int:
         cursor = conn.execute(insert_query, (task.title, task.minutes, task.priority))
     return cursor.lastrowid
 
+def add_tag(conn, task_id: int, tag_name: str) -> None:
+    with conn:
+        insert_tag_query = "INSERT OR IGNORE INTO tags(name) VALUES (?)"
+        conn.execute(insert_tag_query, (tag_name, ))
+
+        select_tag_id_query = "SELECT id FROM tags WHERE name = ?"
+        tag_id = conn.execute(select_tag_id_query, (tag_name, )).fetchone()["id"]
+
+        insert_task_tag_query = "INSERT INTO task_tags(task_id, tag_id) VALUES (?, ?)"
+        conn.execute(insert_task_tag_query, (task_id, tag_id))
+
 def search_tasks(conn, phrase: str) -> list[Task]:
     search_query = "SELECT * FROM tasks WHERE title LIKE ?"
     with conn:
