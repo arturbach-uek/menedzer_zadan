@@ -87,7 +87,7 @@ class TaskManager():
     
     def add_task(self, new_task):
         if new_task in self.tasks:
-            raise TaskManagerError(new_task.title)
+            raise TaskManagerError(f"Zadanie '{new_task.title}' już istnieje.")
         self.tasks.append(new_task)
 
     def delete_task(self, title):
