@@ -7,7 +7,7 @@ from errors import TaskDontExistError
 @pytest.fixture
 def conn():
     connection = database.get_connection(":memory:")
-    database.create_table(connection)
+    database.create_tables(connection)
     yield connection
     connection.close()
 

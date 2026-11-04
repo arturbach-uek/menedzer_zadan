@@ -173,9 +173,8 @@ def show_summary() -> None:
 
 def main():
     conn = database.get_connection(db_path)
-
     try:
-        database.create_table(conn)
+        database.create_tables(conn)
         database.import_from_json(conn, json_path)
         tasks = database.get_all_tasks(conn)
     finally:

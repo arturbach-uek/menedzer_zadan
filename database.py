@@ -10,18 +10,37 @@ def get_connection(path):
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
-def create_table(conn):
-    create_query = """
-        CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY,
-            title TEXT NOT NULL,
-            minutes INTEGER NOT NULL,
-            priority INTEGER NOT NULL,
-            is_done INTEGER NOT NULL DEFAULT 0
-        )
-    """
+def create_tables(conn):
     with conn:
-        conn.execute(create_query)
+        create_tasks_query = """
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY,
+                title TEXT NOT NULL,
+                minutes INTEGER NOT NULL,
+                priority INTEGER NOT NULL,
+                is_done INTEGER NOT NULL DEFAULT 0
+            )
+        """
+        conn.execute(create_tasks_query)
+
+        create_tags_query = """
+            CREATE TABLE IF NOT EXISTS tags (
+                id INTEGER PRIMARY KEY,
+                name TEXT UNIQUE NOT NULL
+            )
+        """
+        conn.execute(create_tags_query)
+
+        create_task_tags_query = """
+            CREATE TABLE IF NOT EXISTS task_tags (
+                task_id INTEGER NOT NULL,
+                tag_id INTEGER NOT NULL,
+                PRIMARY KEY (task_id, tag_id),
+                FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+                FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+            )
+        """
+        conn.execute(create_task_tags_query)
 
 def add_task(conn, task: Task) -> int:
     insert_query = "INSERT INTO tasks(title, minutes, priority) VALUES (?, ?, ?)"
