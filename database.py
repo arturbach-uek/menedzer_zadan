@@ -4,6 +4,12 @@ from pathlib import Path
 import sqlite3
 import json
 
+def get_connection(path):
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
 def create_table(conn):
     create_query = """
         CREATE TABLE IF NOT EXISTS tasks (

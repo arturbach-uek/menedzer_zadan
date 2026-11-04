@@ -6,8 +6,7 @@ from errors import TaskDontExistError
 
 @pytest.fixture
 def conn():
-    connection = sqlite3.connect(":memory:")
-    connection.row_factory = sqlite3.Row
+    connection = database.get_connection(":memory:")
     database.create_table(connection)
     yield connection
     connection.close()

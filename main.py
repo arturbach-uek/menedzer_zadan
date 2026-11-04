@@ -3,19 +3,17 @@ from models import Task, RecurringTask, TaskManager
 from errors import TaskManagerError, TaskDontExistError, InvalidTaskError
 from zadania import get_raport, get_todays_plan, export_tasks_csv
 import database
-import sqlite3
 
 BASE_DIR = Path(__file__).resolve().parent
 
 json_path = BASE_DIR / "database" / "tasks.json"
-csv_path = BASE_DIR / "database" / "tasks.csv"
-db_path = BASE_DIR / "database" / "tasks.db"
+json_path.parent.mkdir(parents=True, exist_ok=True)
 
-def get_db_connection():
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
+csv_path = BASE_DIR / "database" / "tasks.csv"
+csv_path.parent.mkdir(parents=True, exist_ok=True)
+
+db_path = BASE_DIR / "database" / "tasks.db"
+db_path.parent.mkdir(parents=True, exist_ok=True)
 
 def add_task_menu(manager: TaskManager) -> None:
     title = input("Nazwa zadania: ").strip()
@@ -45,7 +43,7 @@ def add_task_menu(manager: TaskManager) -> None:
         print(f"Błąd: {error}")
         return
 
-    conn = get_db_connection()
+    conn = database.get_connection(db_path)
     try:
         manager.add_task(task)
         task.id = database.add_task(conn, task)
@@ -56,7 +54,7 @@ def add_task_menu(manager: TaskManager) -> None:
         conn.close()
 
 def show_tasks() -> None:
-    conn = get_db_connection()
+    conn = database.get_connection(db_path)
     try:
         order_by = input("Sortuj po (priority/minutes/title): ") or "priority"
         tasks = database.get_all_tasks(conn, order_by)
@@ -67,7 +65,7 @@ def show_tasks() -> None:
         conn.close()
 
 def complete_task_menu(manager: TaskManager) -> None:
-    conn = get_db_connection()
+    conn = database.get_connection(db_path)
     try:
         task_id = int(input("ID zadania do oznaczenia jako zrobione: "))
         database.mark_as_done(conn, task_id)
@@ -82,7 +80,7 @@ def complete_task_menu(manager: TaskManager) -> None:
         conn.close()
 
 def delete_task_menu(manager: TaskManager) -> None:
-    conn = get_db_connection()
+    conn = database.get_connection(db_path)
     try:
         task_id = int(input("ID zadania do usunięcia: "))
         database.delete_task(conn, task_id)
@@ -97,7 +95,7 @@ def delete_task_menu(manager: TaskManager) -> None:
         conn.close()
 
 def search_tasks_menu() -> None:
-    conn = get_db_connection()
+    conn = database.get_connection(db_path)
     try:
         phrase = input("Szukaj zadania: ").strip()
         tasks = database.search_tasks(conn, phrase)
@@ -108,7 +106,7 @@ def search_tasks_menu() -> None:
         conn.close()
 
 def show_report() -> None:
-    conn = get_db_connection()
+    conn = database.get_connection(db_path)
     try:
         tasks = database.get_all_tasks(conn)
     except ValueError as error:
@@ -153,7 +151,7 @@ def show_report() -> None:
 
 def show_summary() -> None:
     try:
-        conn = get_db_connection()
+        conn = database.get_connection(db_path)
         tasks = database.get_all_tasks(conn)
     except ValueError as error:
         print(f"Błąd: {error}")
@@ -174,7 +172,7 @@ def show_summary() -> None:
     print(f"Czas zrobionych zadań: {completed_minutes} min")
 
 def main():
-    conn = get_db_connection()
+    conn = database.get_connection(db_path)
 
     try:
         database.create_table(conn)
