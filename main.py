@@ -208,7 +208,7 @@ def main():
         print("8. Pokaz podsumowanie")
         print("9. Koniec")
 
-        action = input("Podaj numer akcji (1-7): ").strip()
+        action = input("Podaj numer akcji (1-9): ").strip()
 
         if action == "9":
             break
