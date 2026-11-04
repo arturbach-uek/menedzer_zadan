@@ -134,6 +134,28 @@ def get_minutes_by_tag(conn) -> list[tuple[str, int]]:
     rows = conn.execute(select_query).fetchall()
     return [(row["name"], row["total_minutes"]) for row in rows]
 
+def get_priority_counts(conn, min_count: int) -> list[tuple[int, int]]:
+    select_query = """
+        SELECT priority, COUNT(*) AS tasks_count
+        FROM tasks
+        GROUP BY priority
+        HAVING COUNT(*) >= ?
+        ORDER BY priority
+    """
+    rows = conn.execute(select_query, (min_count, )).fetchall()
+    return [(row["priority"], row["tasks_count"]) for row in rows]
+
+def get_unused_tags(conn) -> list[str]:
+    query = """
+        SELECT tags.name
+        FROM tags
+        LEFT JOIN task_tags ON task_tags.tag_id = tags.id
+        WHERE task_tags.tag_id IS NULL
+        ORDER BY tags.name
+    """
+    rows = conn.execute(query).fetchall()
+    return [row["name"] for row in rows]
+
 def import_from_json(conn, file_path) -> int:
     if not Path(file_path).exists():
         return 0
