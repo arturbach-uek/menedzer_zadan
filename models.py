@@ -12,12 +12,11 @@ class Task:
 
     def __post_init__(self):
         if not self.title.strip():
-            raise InvalidTaskError("Tytuł nie może byc pusty!", self.title)
+            raise InvalidTaskError("tytuł", self.title)
         if self.priority not in range(1, 4):
-            raise InvalidTaskError("Priorytet musi być z zakresu od 1 do 3!", self.priority)
+            raise InvalidTaskError("priorytet", self.priority)
         if self.minutes <= 0:
-            raise InvalidTaskError("Liczba minut musi być większa od 0!", self.minutes)
-
+            raise InvalidTaskError("minuty", self.minutes)
         self.tags = set(self.tags)
 
     @property
@@ -88,7 +87,7 @@ class TaskManager():
     
     def add_task(self, new_task):
         if new_task in self.tasks:
-            raise TaskManagerError(new_task.id)
+            raise TaskManagerError(f"Zadanie '{new_task.title}' już istnieje.")
         self.tasks.append(new_task)
 
     def delete_task(self, title):

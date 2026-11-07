@@ -1,5 +1,6 @@
 from errors import TaskDontExistError
 from models import Task
+from pathlib import Path
 import sqlite3
 import json
 
@@ -64,6 +65,8 @@ def delete_task(conn, task_id) -> bool:
     return True
 
 def import_from_json(conn, file_path) -> int:
+    if not Path(file_path).exists():
+        return 0
     with conn:
         cursor = conn.cursor()
 

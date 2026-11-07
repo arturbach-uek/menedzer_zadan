@@ -41,28 +41,24 @@ def add_task_menu(manager: TaskManager) -> None:
             )
         else:
             task = Task(title=title, minutes=minutes, priority=priority, tags=tags)
-    except InvalidTaskError as error:
+    except (InvalidTaskError, ValueError) as error:
         print(f"Błąd: {error}")
         return
 
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
-        task_id = database.add_task(conn, task)
-
         manager.add_task(task)
-
-        task.id = task_id
-        print(f"Pomyślnie dodano zadanie: {title} (id: {task_id})")
-
+        task.id = database.add_task(conn, task)
+        print(f"Pomyślnie dodano zadanie: {title} (id: {task.id})")
     except (TaskManagerError, ValueError) as error:
         print(f"Błąd: {error}")
     finally:
         conn.close()
 
 def show_tasks() -> None:
+    conn = get_db_connection()
     try:
         order_by = input("Sortuj po (priority/minutes/title): ") or "priority"
-        conn = get_db_connection()
         tasks = database.get_all_tasks(conn, order_by)
         print(*tasks, sep="\n")
     except ValueError as error:
@@ -101,18 +97,19 @@ def delete_task_menu(manager: TaskManager) -> None:
         conn.close()
 
 def search_tasks_menu() -> None:
+    conn = get_db_connection()
     try:
         phrase = input("Szukaj zadania: ").strip()
-        conn = get_db_connection()
         tasks = database.search_tasks(conn, phrase)
         print(*tasks, sep="\n")
     except ValueError as error:
         print(f"Błąd: {error}")
     finally:
         conn.close()
+
 def show_report() -> None:
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
         tasks = database.get_all_tasks(conn)
     except ValueError as error:
         print(f"Błąd: {error}")
@@ -211,7 +208,7 @@ def main():
         print("8. Pokaz podsumowanie")
         print("9. Koniec")
 
-        action = input("Podaj numer akcji (1-7): ").strip()
+        action = input("Podaj numer akcji (1-9): ").strip()
 
         if action == "9":
             break
