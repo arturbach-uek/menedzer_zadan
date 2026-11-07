@@ -31,6 +31,7 @@ def test_deleting_nonexistent_task():
     with pytest.raises(TaskDontExistError) as info:
         manager.delete_task("Pranie")
     assert info.value.task_id == "Pranie"
+    assert str(info.value) == "Zadanie „Pranie” nie istnieje."
 
 def test_task_dict_round_trip():
     task = Task("Pranie", 30)

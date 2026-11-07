@@ -5,17 +5,18 @@ from errors import TaskManagerError, TaskDontExistError, InvalidTaskError
 class Task:
     title: str
     minutes: int
+    id: int | None = None
     priority: int = 1
     tags: set = field(default_factory=set)
     is_done: bool = False
 
     def __post_init__(self):
         if not self.title.strip():
-            raise InvalidTaskError("title", self.title)
+            raise InvalidTaskError("Tytuł nie może byc pusty!", self.title)
         if self.priority not in range(1, 4):
-            raise InvalidTaskError("priority", self.priority)
+            raise InvalidTaskError("Priorytet musi być z zakresu od 1 do 3!", self.priority)
         if self.minutes <= 0:
-            raise InvalidTaskError("minutes", self.minutes)
+            raise InvalidTaskError("Liczba minut musi być większa od 0!", self.minutes)
 
         self.tags = set(self.tags)
 
@@ -26,15 +27,16 @@ class Task:
     @classmethod
     def from_dict(cls, data: dict):
         return cls(
+            id=data.get("id"),
             title=data["title"],
             minutes=data["minutes"],
             priority=data.get("priority", 1),
             tags=set(data.get("tags", [])),
             is_done=data.get("is_done", False),
         )
-
     def to_dict(self):
         return {
+            "id": self.id,
             "title": self.title,
             "minutes": self.minutes,
             "priority": self.priority,
@@ -47,7 +49,7 @@ class Task:
 
     def __str__(self):
         status_marker = "x" if self.is_done else " "
-        return f"[{status_marker}] {self.title} ({self.minutes} min, P{self.priority})"
+        return f"{self.id} | [{status_marker}] {self.title} ({self.minutes} min, P{self.priority})"
 
     def __eq__(self, other_task):
         if not isinstance(other_task, Task):
@@ -62,7 +64,10 @@ class RecurringTask(Task):
         super().__post_init__()
         if self.recurrence_interval_days <= 0:
             raise ValueError("Liczba dni między powtórzeniami musi być większa niż 0!")
-
+        
+    def to_dict(self):
+        return super().to_dict() | {"recurrence_interval_days": self.recurrence_interval_days}
+    
     def __str__(self):
         recurrence_label = (
             "codziennie" 
@@ -74,9 +79,16 @@ class RecurringTask(Task):
 class TaskManager():
     def __init__(self):
         self.tasks = []
+
+    def get_task_by_id(self, task_id):
+        for task in self.tasks:
+            if task.id == task_id:
+                return task
+        raise TaskDontExistError(task_id)
+    
     def add_task(self, new_task):
         if new_task in self.tasks:
-            raise TaskManagerError("Task jest już zapisany na liście zadań!")
+            raise TaskManagerError(new_task.id)
         self.tasks.append(new_task)
 
     def delete_task(self, title):
