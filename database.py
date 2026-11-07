@@ -46,18 +46,24 @@ def add_task(conn, task: Task) -> int:
     insert_query = "INSERT INTO tasks(title, minutes, priority) VALUES (?, ?, ?)"
     with conn:
         cursor = conn.execute(insert_query, (task.title, task.minutes, task.priority))
-    return cursor.lastrowid
+        task_id = cursor.lastrowid
+        for tag_name in task.tags:
+            insert_task_tag(conn, task_id, tag_name)
+    return task_id
+
+def insert_task_tag(conn, task_id: int, tag_name: str) -> None:
+    insert_tag_query = "INSERT OR IGNORE INTO tags(name) VALUES (?)"
+    conn.execute(insert_tag_query, (tag_name, ))
+
+    select_tag_id_query = "SELECT id FROM tags WHERE name = ?"
+    tag_id = conn.execute(select_tag_id_query, (tag_name, )).fetchone()["id"]
+
+    insert_task_tag_query = "INSERT INTO task_tags(task_id, tag_id) VALUES (?, ?)"
+    conn.execute(insert_task_tag_query, (task_id, tag_id))
 
 def add_tag(conn, task_id: int, tag_name: str) -> None:
     with conn:
-        insert_tag_query = "INSERT OR IGNORE INTO tags(name) VALUES (?)"
-        conn.execute(insert_tag_query, (tag_name, ))
-
-        select_tag_id_query = "SELECT id FROM tags WHERE name = ?"
-        tag_id = conn.execute(select_tag_id_query, (tag_name, )).fetchone()["id"]
-
-        insert_task_tag_query = "INSERT INTO task_tags(task_id, tag_id) VALUES (?, ?)"
-        conn.execute(insert_task_tag_query, (task_id, tag_id))
+        insert_task_tag(conn, task_id, tag_name)
 
 def remove_tag(conn, task_id: int, tag_name: str) -> bool:
     delete_query = "DELETE FROM task_tags WHERE task_id = ? AND tag_id = (SELECT id FROM tags WHERE name = ?)"
@@ -100,10 +106,21 @@ def get_all_tasks(conn, order_by="priority") -> list[Task]:
     if order_by not in allowed_columns:
         raise ValueError("Nieprawidłowe sortowanie")
 
-    select_query = f"SELECT id, title, minutes, priority, is_done FROM tasks ORDER BY {allowed_columns[order_by]}"
+    select_query = f"""
+        SELECT tasks.id, tasks.title, tasks.minutes, tasks.priority, tasks.is_done, GROUP_CONCAT(tags.name) AS tags
+        FROM tasks
+        LEFT JOIN task_tags ON task_tags.task_id = tasks.id
+        LEFT JOIN tags ON tags.id = task_tags.tag_id
+        GROUP BY tasks.id
+        ORDER BY {allowed_columns[order_by]}
+    """
     with conn:
         cursor = conn.execute(select_query)
-        tasks = [Task.from_dict(dict(task)) for task in cursor.fetchall()]
+        tasks = []
+        for row in cursor.fetchall():
+            task_data = dict(row)
+            task_data["tags"] = task_data["tags"].split(",") if task_data["tags"] else []
+            tasks.append(Task.from_dict(task_data))
     return tasks
 
 def mark_as_done(conn, task_id) -> bool:
@@ -179,7 +196,7 @@ def import_from_json(conn, file_path) -> int:
             task_id = cursor.lastrowid
 
             for tag_name in task.get("tags", []):
-                add_tag(conn, task_id, tag_name)
+                insert_task_tag(conn, task_id, tag_name)
 
             imported_count += 1
     return imported_count
