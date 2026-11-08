@@ -20,7 +20,7 @@ class Task:
         self.tags = set(self.tags)
 
     @property
-    def czy_pilne(self):
+    def is_urgent(self):
         return not self.is_done and self.priority >= 2
 
     @classmethod
