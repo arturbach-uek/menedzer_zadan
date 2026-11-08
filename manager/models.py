@@ -27,3 +27,16 @@ class Task(Base):
         if not isinstance(other_task, Task):
             return NotImplemented
         return self.title.lower() == other_task.title.lower()
+
+class Tag(Base):
+    __tablename__ = "tags"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(unique=True)
+
+    def __repr__(self) -> str:
+        return f"Tag(id={self.id}, name={self.name})"
+
+class TaskTag(Base):
+    __tablename__ = "task_tags"
+    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"), primary_key=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tags.id"), primary_key=True)
