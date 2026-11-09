@@ -6,9 +6,8 @@ from errors import TaskDontExistError
 
 @pytest.fixture
 def conn():
-    connection = sqlite3.connect(":memory:")
-    connection.row_factory = sqlite3.Row
-    database.create_table(connection)
+    connection = database.get_connection(":memory:")
+    database.create_tables(connection)
     yield connection
     connection.close()
 
@@ -39,3 +38,23 @@ def test_task_title_with_apostrophe(conn):
 def test_delete_nonexistent_task(conn):
     with pytest.raises(TaskDontExistError):
         database.delete_task(conn, 999)
+
+def test_add_tag_to_nonexistent_task(conn):
+    with pytest.raises(sqlite3.IntegrityError):
+        database.add_tag(conn, 999, "praca")
+
+def test_delete_task_removes_its_tags(conn):
+    task_id = database.add_task(conn, Task("Pranie", 30))
+    database.add_tag(conn, task_id, "dom")
+    database.delete_task(conn, task_id)
+    links_count = conn.execute("SELECT COUNT(*) FROM task_tags").fetchone()[0]
+    assert links_count == 0
+
+def test_minutes_by_tag_report(conn):
+    report_id = database.add_task(conn, Task("Raport", 30))
+    mail_id = database.add_task(conn, Task("Mail", 45))
+    shopping_id = database.add_task(conn, Task("Zakupy", 20))
+    database.add_tag(conn, report_id, "praca")
+    database.add_tag(conn, mail_id, "praca")
+    database.add_tag(conn, shopping_id, "dom")
+    assert dict(database.get_minutes_by_tag(conn)) == {"praca": 75, "dom": 20}
