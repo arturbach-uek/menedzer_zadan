@@ -1,10 +1,9 @@
 from collections.abc import Iterable
-from datetime import date
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from errors import InvalidTaskError, TaskDontExistError
+from errors import TaskManagerError, InvalidTaskError, TaskDontExistError
 from manager.models import Tag, Task, TaskTag
 
 ORDER_OPTIONS = {
@@ -27,7 +26,11 @@ def add_task(
         raise InvalidTaskError("minuty", minutes)
     if priority not in range(1, 4):
         raise InvalidTaskError("priorytet", priority)
-    
+
+    existing_titles = session.scalars(select(Task.title))
+    if any(existing_title.lower() == title.strip().lower() for existing_title in existing_titles):
+        raise TaskManagerError(f"Zadanie '{title.strip()}' już istnieje.")
+
     task = Task(title=title.strip(), minutes=minutes, priority=priority)
     session.add(task)
     session.flush()
@@ -59,6 +62,23 @@ def get_all_tasks(session: Session, order_by: str = "priority") -> list[Task]:
         raise ValueError("Nieprawidłowe sortowanie")
     query = select(Task).order_by(*ORDER_OPTIONS[order_by])
     return list(session.scalars(query))
+
+def get_undone_tasks(session: Session) -> list[Task]:
+    select_query = (
+        select(Task)
+        .where(Task.is_done == False)
+        .order_by(Task.priority.desc(), Task.minutes)
+    )
+    return list(session.scalars(select_query))
+
+def get_task_tags(session: Session, task_id: int) -> list[str]:
+    select_query = (
+        select(Tag.name)
+        .join(TaskTag, TaskTag.tag_id == Tag.id)
+        .where(TaskTag.task_id == task_id)
+        .order_by(Tag.name)
+    )
+    return list(session.scalars(select_query))
 
 def mark_as_done(session: Session, task_id: int) -> Task:
     task = get_task_by_id(session, task_id)
