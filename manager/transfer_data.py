@@ -5,7 +5,7 @@ from manager import repository
 from manager.database import OLD_DB_PATH, engine
 from manager.models import Task
 
-def get_raw_tasks() -> list[tuple]:
+def get_raw_tasks() -> list:
     conn = db.get_connection(OLD_DB_PATH)
     try:
         return db.get_all_tasks(conn)
@@ -16,7 +16,7 @@ def task_exists(session: Session, title: str) -> bool:
     task = session.scalars(select(Task).where(Task.title == title)).first()
     return task is not None
 
-def main() :
+def main():
     transferred = 0
     skipped = 0
     with Session(engine) as session:
