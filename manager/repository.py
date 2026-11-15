@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from datetime import date
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -18,7 +19,8 @@ def add_task(
     title: str,
     minutes: int,
     priority: int = 1,
-    tags: Iterable[str] = ()
+    tags: Iterable[str] = (),
+    deadline: date | None = None
 ) -> Task:
     if not title.strip():
         raise InvalidTaskError("tytuł", title)
@@ -31,7 +33,7 @@ def add_task(
     if any(existing_title.lower() == title.strip().lower() for existing_title in existing_titles):
         raise TaskManagerError(f"Zadanie '{title.strip()}' już istnieje.")
 
-    task = Task(title=title.strip(), minutes=minutes, priority=priority)
+    task = Task(title=title.strip(), minutes=minutes, priority=priority, deadline=deadline)
     session.add(task)
     session.flush()
 

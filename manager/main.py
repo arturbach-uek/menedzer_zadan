@@ -1,3 +1,4 @@
+from datetime import date
 from sqlalchemy.orm import Session
 from errors import TaskManagerError, TaskDontExistError
 from zadania import get_raport, get_todays_plan
@@ -20,7 +21,11 @@ def add_task_menu(session: Session) -> None:
         minutes = int(input("Planowany czas (min): ").strip())
         priority_input = input("Priorytet (1-3, domyślnie 1): ").strip()
         priority = int(priority_input) if priority_input else 1
-        task = repository.add_task(session, title, minutes, priority, tags)
+
+        deadline_input = input("Termin (RRRR-MM-DD): ").strip()
+        deadline = date.fromisoformat(deadline_input) if deadline_input else None
+
+        task = repository.add_task(session, title, minutes, priority, tags, deadline)
         print(f"Pomyślnie dodano zadanie: {title} (id: {task.id})")
     except (TaskManagerError, ValueError) as error:
         session.rollback()

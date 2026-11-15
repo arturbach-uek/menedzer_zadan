@@ -20,7 +20,8 @@ class Task(Base):
 
     def __str__(self) -> str:
         status_marker = "x" if self.is_done else " "
-        return f"{self.id} | [{status_marker}] {self.title} ({self.minutes} min, P{self.priority})"
+        deadline_text = f", termin: {self.deadline}" if self.deadline else ""
+        return f"{self.id} | [{status_marker}] {self.title} ({self.minutes} min, P{self.priority}{deadline_text})"
 
     def __repr__(self) -> str:
         return f"Task(id={self.id}, title={self.title}, is_done={self.is_done})"
