@@ -1,5 +1,6 @@
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from datetime import date
 
 class Base(DeclarativeBase):
     pass
@@ -11,6 +12,7 @@ class Task(Base):
     minutes: Mapped[int]
     priority: Mapped[int] = mapped_column(default=1, server_default="1")
     is_done: Mapped[bool] = mapped_column(default=False, server_default="0")
+    deadline: Mapped[date | None]
 
     @property
     def is_urgent(self) -> bool:
