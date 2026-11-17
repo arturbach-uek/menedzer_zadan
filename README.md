@@ -3,7 +3,8 @@
 ## Cel projektu
 
 Projekt umożliwia zarządzanie listą zadań za pomocą menu w konsoli. 
-Pozwala dodawać, wyświetlać i obsługiwać zadania, zapisywać dane w pliku JSON oraz eksportować je do CSV. 
+Pozwala dodawać, wyświetlać i obsługiwać zadania z tagami oraz pokazywać raporty i plan na dziś. 
+Dane są zapisywane w bazie SQLite przez SQLAlchemy, a schemat bazy tworzą migracje Alembica. 
 Zawiera również testy automatyczne sprawdzające poprawność działania funkcji.
 
 ## 1. Utworzenie środowiska wirtualnego
@@ -28,19 +29,33 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## 3. Uruchomienie programu
+## 3. Utworzenie bazy danych
+
+Tworzy tabele w bazie `database/task_ord.db`:
 
 ```bash
-python3 main.py
+alembic upgrade head
 ```
 
-## 4. Uruchomienie testów
+Jednorazowo możesz przenieść zadania ze starej bazy `database/tasks.db`:
+
+```bash
+python3 -m manager.transfer_data
+```
+
+## 4. Uruchomienie programu
+
+```bash
+python3 -m manager.main
+```
+
+## 5. Uruchomienie testów
 
 ```bash
 python3 -m pytest
 ```
 
-## 5. Dezaktywacja środowiska wirtualnego
+## 6. Dezaktywacja środowiska wirtualnego
 
 Po zakończeniu pracy możesz wyłączyć środowisko wirtualne:
 
